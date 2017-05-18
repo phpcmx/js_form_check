@@ -29,9 +29,11 @@
 1. lenLimit 限定长度 两个参数 min，max。内容限定在这两个值之间。如果没有传递max，就不验证最大（最下你可以传递0嘛，那跟验证不验证有什么区别？）;
 1. regex 正则验证 传递正则验证规则；
 1. post 异步请求验证 这个高级了嘿，你可以用ajax接口的方式验证参数是否正确，很高级哦~需要注意的是如果你没有设置blur为false，那么在取消焦点和表单提交的时候都会验证，也就是说会请求两次哦。
-    
+
+
     // 获取可以验证的方法，里面全是对象实现方式看下
     var fVerifyType = formCheck.getVerifyType();
+    
 
 好的，所有的准备工作已经做完了，可以对表单进行验证规则的设置了哦。
 
@@ -85,3 +87,53 @@
     
 好的，照着这个样子把所有的表单元素设置完毕就ok了哦~
 是否很简单？~如果不简单，你找我！
+
+# 附录
+
+简单调用
+
+    /// 密码验证
+    formCheck.addVerify({
+        id : '密码',
+        selector : '#loginPsw',
+        verify : [{
+            /// 长度验证
+            type : fVerifyType.lenLimit(6, 16)
+        },{
+            /// 密码正则验证
+            type : fVerifyType.regex(/^[a-zA-Z0-9_!@#$%^&]+$/),
+            success : function(d){
+                console.log(d);
+            }
+        }],
+        error : function (d, code, msg){
+            console.log(d, code, msg);
+        }
+    });
+    
+    
+所有类别的调用参数：
+ 
+    // 获取可以验证的方法，里面全是对象实现方式看下
+    var fVerifyType = formCheck.getVerifyType();
+    
+    // require
+    fVerifyType.require();
+    
+    // noRequire
+    fVerifyType.noRequire();
+    
+    // compareWith
+    fVerifyType.compareWith('value');
+    fVerifyType.compareWith(function(){
+        $('#selector').val();
+    });
+    
+    // lenLimit
+    fVerifyType.lenLimit(3, 20);
+    
+    // regix
+    fVerifyType.regix(/^[0-9]$/i);
+    
+    // post
+    fVerifyType.post(url, data);
