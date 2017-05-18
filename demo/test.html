@@ -1,0 +1,298 @@
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+<script src="../data/js/formCheck.js"></script>
+
+<form method="post" action="" id="myForm">
+<!--用户名-->
+<input type="text" id="loginAccount" name="account">
+<label id="tip_loginAccount"></label>
+<!--密码-->
+<input type="text" id="loginPsw" name="password">
+<label id="tip_loginPsw"></label>
+<!--确认密码-->
+<input type="text" id="loginPswConfig" name="passwordConfig">
+<label id="tip_loginPswConfig"></label>
+<!--手机号-->
+<input type="text" id="telephone" name="phone">
+<label id="tip_telephone"></label>
+<!--验证码-->
+<input type="text" id="kaptcha" name="kaptcha">
+<label id="tip_Code"></label>
+<!--推荐码-->
+<input type="text" id="referralTel" name="referralTel">
+<label id="tip_referralTel"></label>
+<!--短信验证码-->
+<input type="text" id="telVcode" name="telVcode">
+<label id="tip_telVcode"></label>
+    <input type="submit" value="submit">
+</form>
+
+<script>
+
+    function showErrMsg(id,msg){
+        $("#tip_"+id).css("display","block")
+        $("#tip_"+id).html(msg);
+        if($("#span_"+id).length>0){
+            $("#span_"+id).css("display","none")
+        }
+    }
+
+    function showSuccMsg(id){
+        $("#tip_"+id).html("");
+        $("#span_"+id).css("display","inline-block")
+    }
+
+
+    // 这里定义form验证类
+    var formCheck = new FormCheck({
+        selector : '#myForm',    // form表单的选择器
+        isAjax : true,  // 表单提交方式 如果是true 就要自己组织ajax提交 如果是false 就只是判断能不能提交
+        action : 'test.php',    // 要提交的地址 选填 且仅 isAjax:true 时有效，如果不填写应该从form表单的action属性中获取
+//        method : 'post',    // 要提交的方式 选填 且仅 isAjax:true 时有效，如果不填写应该从form表单的method属性中获取
+        // 验证前初始化的钩子
+        startCheck : function(post){
+            console.log('startCheck', post);
+        },
+        // 验证完成的钩子
+        endCheck : function (res){
+            console.log('endCheck', res);
+        }
+    });
+    // 获取可以验证的方法，里面全是对象实现方式看下
+    var fVerifyType = formCheck.getVerifyType();
+
+    // 用户名验证
+    formCheck.addVerify({
+        id : '用户名',     // 用来标记同一个控件，同一个控件添加多个verify事件只会顺序执行，如果出错则不继续执行
+        selector : '#loginAccount', // 表单的id
+        blur : true,            // 是否在blur取消焦点事件时执行重新验证 默认是true
+        DAlias : 'loginAccount', // 这个在程序里并没有被使用 这里就是演示如何创建自定义属性，这个能在success和error里调用 ，为了区分我加上了前缀，这是个好习惯
+        // 验证 是一个验证对象数组，里面的内容有有三种 type success error
+        verify:[{
+            /// 添加account的长度验证
+            type : fVerifyType.lenLimit(6, 16),  // 验证类型 between 介于两者之间
+            // 验证成功 obj 是对象
+            success : function(d){    // 成功类型返回的是当前配置的对象，比如这个你用 d.id 就能获取 "用户名"
+                // 因为需要长度验证 并且 正则验证全通过，所以这里不处理，等下个正确再处理。ps:但是这里还是会执行
+            },
+            // 验证失败 可以设置统一的error错误处理，这里就可以省略了，也可以写上，做特殊化处理，这样就能覆盖错误提示了
+            error :function(d, code, msg){
+                showErrMsg(d.DAlias, msg);  // 这里调用的 d.DAlias 自定义属性
+            }
+        },{
+            /// 添加account的正则验证
+            type : fVerifyType.regex(/^(?![0-9]+$)[a-zA-Z0-9_]+$/)
+        },{
+            /// post验证账号唯一性
+            type : fVerifyType.post("test.php?type=/users/verifyAccount", {account:$("#loginAccount").val()}),
+            success : function(d, res){     // 如果请求的是post型，则会有第二个参数，第二个参数是post的返回值
+                // 判断下是否是json对象
+                if(typeof res !== 'object'){
+                    res = JSON.parse(res);
+                }
+
+                if(!res){
+                    showErrMsg(d.DAlias, '网络错误');
+                    console.log(res);
+                }else if(res.code === 200){
+                    showSuccMsg(d.DAlias);
+                    return true;            // 这里返回的 true很重要 标记成功
+                }else{
+                    showErrMsg(d.DAlias,res.msg);
+                    return false;           // 这里返回的false很重要，会影响记录的结果
+                }
+            }
+        }],
+        // 统一的错误提示代码，为了减少代码量嘛
+        error : function (d, code, msg){
+            showErrMsg(d.DAlias, msg);
+        }
+    });
+
+
+    /// 密码验证
+    formCheck.addVerify({
+        id : '密码',
+        selector : '#loginPsw',
+        DAlias : 'loginPsw',
+        verify : [{
+            /// 长度验证
+            type : fVerifyType.lenLimit(6, 16)
+        },{
+            /// 密码正则验证
+            type : fVerifyType.regex(/^[a-zA-Z0-9_!@#$%^&]+$/),
+            success : function(d){
+                showSuccMsg(d.DAlias);
+            }
+        }],
+        error : function (d, code, msg){
+            showErrMsg(d.DAlias, msg);
+        }
+    });
+
+
+    /// 确认密码
+    formCheck.addVerify({
+        id : '确认密码',
+        selector : '#loginPswConfig',
+        DAlias : 'loginPswConfig',
+        verify : [{
+            /// 验证密码不能为空
+            type : fVerifyType.require()
+        },{
+            /// 内容匹配验证
+            type : fVerifyType.compareWith(function(){return $("#loginPsw").val()}),
+            success : function (d){
+                showSuccMsg(d.DAlias);
+            }
+        }],
+        error : function (d, code, msg){
+            showErrMsg(d.DAlias, msg);
+        }
+    });
+
+
+    /// 手机号
+    formCheck.addVerify({
+        id : '手机号',
+        selector : '#telephone',
+        DAlias : 'telephone',
+        verify : [{
+            /// 手机号必填
+            type : fVerifyType.require()
+        }, {
+            /// 验证手机号格式
+            type : fVerifyType.regex(/^[1][34578][0-9]{9}$/)
+//        }, {
+            /// 验证发短信的是不是同一个手机 好吧，是我自作多情了，根本没记录 倒也没关系，在后台判断了就行，在后台判断了哈？
+//            type : fVerifyType.compareWith(),
+        }, {
+            /// 验证手机唯一性
+            type : fVerifyType.post("test.php?type=/users/verifyTelephone", {telephone:$('#telephone').val()}),
+            success : function (d, res){
+                // 判断下是否是json对象
+                if(typeof res !== 'object'){
+                    res = JSON.parse(res);
+                }
+
+                if(!res){
+                    showErrMsg(d.DAlias, '网络错误');
+                    console.log(res);
+                }else if(res.code === 200){
+                    showSuccMsg(d.DAlias);
+                }else{
+                    showErrMsg(d.DAlias,res.msg);
+                }
+            }
+        }],
+        error : function (d, code, msg){
+            showErrMsg(d.DAlias, msg);
+        }
+
+    });
+
+
+    /// 验证图形验证码
+    formCheck.addVerify({
+        id : "验证码",
+        selector : "#kaptcha",
+        blur : true,
+        DAlias : 'Code',
+        verify : [{
+            type : fVerifyType.require()
+        },{
+            type : fVerifyType.post("test.php?type=/commonset/verPicCode", {code:$("#kaptcha").val(),picKey:$("kaptchaImage").attr('key')}),
+            success : function(d, res){
+                // 判断下是否是json对象
+                if(typeof res !== 'object'){
+                    res = JSON.parse(res);
+                }
+
+                console.log(res.obj);
+                if(!res){
+                    showErrMsg(d.DAlias, '网络错误');
+                    console.log(res);
+                }else if(res.obj){
+                    $("#tip_Code").html('');
+                    $(".phone_code").show();
+                    $(".img_code").hide();
+                }else{
+                    showErrMsg(d.DAlias, "验证码有误");
+                }
+            }
+        }],
+        error : function (d, code, msg){
+            showErrMsg(d.DAlias, msg);
+        }
+    });
+
+
+    /// 推荐码
+    formCheck.addVerify({
+        id : "推荐码",
+        selector : "#referralTel",
+        DAlias : 'referralTel',
+        verify : [{
+            type : fVerifyType.noRequire(),
+            success : function (d){
+                showSuccMsg(d.DAlias);
+            }
+        },{
+            type : fVerifyType.post("test.php?type=/users/verifyReferralTel",{referralTel:$("#referralTel").val()}),
+            success : function (d, res){
+                // 判断下是否是json对象
+                if(typeof res !== 'object'){
+                    res = JSON.parse(res);
+                }
+
+                if(!res){
+                    showErrMsg(d.DAlias, '网络错误');
+                }else if(res.code === 200){
+                    showSuccMsg(d.DAlias);
+                }else{
+                    showErrMsg(d.DAlias,res.msg);
+                }
+            }
+        }],
+        error : function (d, code, msg){
+            showErrMsg(d.DAlias, msg);
+        }
+    });
+
+
+    /// 验证短信验证码
+    formCheck.addVerify({
+        id : '短信验证码',
+        selector : "#telVcode",
+        blur : true,
+        DAlias : 'telVcode',
+        verify : [{
+            type : fVerifyType.require()
+        },{
+            type : fVerifyType.post("test.php?type=/users/verifyMsgCode",{telephone:$("#telephone").val(),msgCode:$("#telVcode").val()}),
+            success : function (d, res){
+                // 判断下是否是json对象
+                if(typeof res !== 'object'){
+                    res = JSON.parse(res);
+                }
+
+                if(!res){
+                    showErrMsg(d.DAlias, '网络错误');
+                    console.log(res);
+                }else if(res.code === 200){
+                    $("#tip_telVcode").html("");
+                    $("#tip_telVcode").css("display","none");
+                }else{
+                    showErrMsg(d.DAlias,res.msg);
+                }
+            }
+        }],
+        error : function (d, code, msg){
+            showErrMsg(d.DAlias, msg);
+        }
+    });
+
+
+
+
+</script>
