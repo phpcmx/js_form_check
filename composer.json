@@ -1,5 +1,5 @@
 {
-  "name": "phpcmx/js-form-check",
+  "name": "phpcmx/js_form_check",
   "description": "A form validation program. 一个表单验证程序",
   "license": "MIT",
   "keywords": ["form", "form check"],
