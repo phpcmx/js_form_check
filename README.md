@@ -62,7 +62,7 @@
             type : fVerifyType.regex(/^[a-zA-Z0-9_]+$/)
         },{
             /// post验证账号唯一性
-            type : fVerifyType.post("test.php?type=/users/verifyAccount", {account:$("#loginAccount").val()}),
+            type : fVerifyType.post("test.php?type=/users/verifyAccount", function(){return {account:$("#loginAccount").val()};}),
             success : function(d, res){     // 如果请求的是post型，则会有第二个参数，第二个参数是post的返回值
                 // 判断下是否是json对象
                 if(typeof res !== 'object'){
