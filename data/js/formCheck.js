@@ -218,6 +218,11 @@ function FormCheck(userConfig){
             // 验证配置，别名
             var option  = config.verifyList[n];
 
+            // 判断是否在表单提交的时候验证
+            if(signal.checking && option.skipSubmit){
+                option.result = true;
+            }
+
             // 如果有结果不正确，就重新验证一次
             if(option.result !== true) {
                 config.debug && console.log('verify:START', option.id, option);
@@ -246,6 +251,11 @@ function FormCheck(userConfig){
 
             // 每次运行检查前都判断是否需要继续
             if(option.checkStop)break;
+            // 判断是否跳过此验证
+            if(signal.checking && option.verify[m].skipSubmit){
+                option.verify[m].result = true;
+            }
+
             // 设置验证结果为空
             option.verify[m].result = null;
             // 判断验证类型，去验证
@@ -509,6 +519,7 @@ function FormCheck(userConfig){
 //                id : null;                        // 这个必须
 //                selector : null;                  // 这个也必须
             blur : true,                        // 是否在失去焦点时验证
+            skipSubmit : false,                 // 不在表单提交的时候验证
             verify : [],                       // 要验证的类型
             success : function (d, res){},    // 其实也有个统一正确处理
             error : function (d, code, msg){},   // 统一错误处理

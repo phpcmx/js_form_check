@@ -204,6 +204,7 @@
         verify : [{
             type : fVerifyType.require()
         },{
+            skipSubmit : true,
             type : fVerifyType.post("test.php?type=/commonset/verPicCode", {code:$("#kaptcha").val(),picKey:$("kaptchaImage").attr('key')}),
             success : function(d, res){
                 // 判断下是否是json对象
