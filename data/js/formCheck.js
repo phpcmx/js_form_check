@@ -107,7 +107,7 @@ function FormCheck(userConfig){
         config.debug && signal.log();
         config.debug && console.log(config);
         config.debug && console.log('EVENT::submit');
-        e.preventDefault();
+        // e.preventDefault();
         // 要提交的表单数据
         var post = $(config.selector).serializeArray();
         config.debug && console.log('serializeArray:',post);
@@ -130,6 +130,8 @@ function FormCheck(userConfig){
 
         // 判断什么时候不能提交
         if(signal.result !== true || signal.isHasPost()){
+            config.debug && console.log("阻止提交：");
+            config.debug && signal.log();
             e.preventDefault();
         }
 
@@ -140,22 +142,28 @@ function FormCheck(userConfig){
         if(signal.result !== null && !signal.isHasPost()){
             // 判断提交方式
 
-            if(signal.result ===true && config.isAjax){
-                // 阻止表单提交
-                e.preventDefault();
+            if(signal.result ===true){
+                if(config.isAjax) {
+                    // 阻止表单提交
+                    e.preventDefault();
 
-                console.log(config);
-                // 这里获取ajax内容
-                $.ajax({
-                    url : config.action,
-                    data : $.param(post),
-                    type : config.method,
-                    success : function (res){
-                        // ajax 方式提交的内容会通过endCheck进行验证
-                        config.endCheck(res);
-                    },
-                    error : function (){}
-                });
+                    console.log(config);
+                    // 这里获取ajax内容
+                    $.ajax({
+                        url: config.action,
+                        data: $.param(post),
+                        type: config.method,
+                        success: function (res) {
+                            // ajax 方式提交的内容会通过endCheck进行验证
+                            config.endCheck(res);
+                        },
+                        error: function () {
+                        }
+                    });
+                }else{
+                    $(this).off('submit').submit();
+                    config.endCheck(null);
+                }
             }else{
                 // 最后收尾钩子
                 config.endCheck(null);
