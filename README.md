@@ -72,6 +72,7 @@
                 if(!res){
                     showErrMsg(d.DAlias, '网络错误');
                     console.log(res);
+                    return false;
                 }else if(res.code === 200){
                     showSuccMsg(d.DAlias);
                     return true;            // 这里返回的 true很重要 标记成功

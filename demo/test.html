@@ -178,10 +178,13 @@
                 if(!res){
                     showErrMsg(d.DAlias, '网络错误');
                     console.log(res);
+                    return false;
                 }else if(res.code === 200){
                     showSuccMsg(d.DAlias);
+                    return true;
                 }else{
                     showErrMsg(d.DAlias,res.msg);
+                    return false;
                 }
             }
         }],
@@ -212,12 +215,15 @@
                 if(!res){
                     showErrMsg(d.DAlias, '网络错误');
                     console.log(res);
+                    return false;
                 }else if(res.obj){
                     $("#tip_Code").html('');
                     $(".phone_code").show();
                     $(".img_code").hide();
+                    return true;
                 }else{
                     showErrMsg(d.DAlias, "验证码有误");
+                    return false;
                 }
             }
         }],
@@ -247,10 +253,13 @@
 
                 if(!res){
                     showErrMsg(d.DAlias, '网络错误');
+                    return false;
                 }else if(res.code === 200){
                     showSuccMsg(d.DAlias);
+                    return true;
                 }else{
                     showErrMsg(d.DAlias,res.msg);
+                    return false;
                 }
             }
         }],
@@ -279,11 +288,14 @@
                 if(!res){
                     showErrMsg(d.DAlias, '网络错误');
                     console.log(res);
+                    return false;
                 }else if(res.code === 200){
                     $("#tip_telVcode").html("");
                     $("#tip_telVcode").css("display","none");
+                    return true;
                 }else{
                     showErrMsg(d.DAlias,res.msg);
+                    return false;
                 }
             }
         }],
