@@ -314,6 +314,14 @@ function FormCheck(userConfig){
         var obj = $(option.selector);
         var value = obj.val();
 
+        // 都改成回调模式
+        if(typeof min === 'function'){
+            min = min();
+        }
+        if(typeof max === 'function'){
+            max = max();
+        }
+
         var msg ;
         if(value.length < min){
             msg = option.id + "不能小于" + min;
@@ -331,6 +339,10 @@ function FormCheck(userConfig){
         var obj = $(option.selector);
         var value = obj.val();
 
+        if(typeof reg === 'function'){
+            reg = reg();
+        }
+
         if(!value.match(reg)){
             var msg = option.id + "格式不正确";
             _failCheck(option, index, errCode.regex, msg);
@@ -341,10 +353,19 @@ function FormCheck(userConfig){
     function _verifyPost(option, index, url, data){
         // var obj = $(option.selector);
         // var value = obj.val();
+        // 设置正在post 互斥量
         if(typeof option.verify[index].posting === 'undefined' || option.verify[index].posting === false){
             option.verify[index].posting = true;
         }else if(option.verify[index].posting === true){
             return;
+        }
+
+        // 改成回调模式
+        if(typeof data === 'function'){
+            data = data();
+        }
+        if(typeof url === 'function'){
+            url = url();
         }
 
         signal.PPost();
