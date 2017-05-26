@@ -133,12 +133,20 @@
     
     // lenLimit
     fVerifyType.lenLimit(3, 20);
+    fVerifyType.lenLimit(function(){
+        return 3;
+    }, function(){
+        return 20;
+    });
     
     // regix
     fVerifyType.regix(/^[0-9]$/i);
     
     // post
-    fVerifyType.post(url, data);
+    fVerifyType.post(url, jsonObj);
+    fVerifyType.post(url, function(){
+        return jsonObj;
+    });
 
 哦对了，如果你还想在自己的函数里调用判断，比如在点击发送短信的时候后调用检查手机号的方法，可以这么来哦
 
