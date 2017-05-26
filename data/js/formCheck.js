@@ -536,6 +536,7 @@ function FormCheck(userConfig){
             for(var n in config.verifyList){
                 if(config.verifyList[n].id === id){
                     verify(config.verifyList[n]);
+                    return config.verifyList[n].result;
                 }
             }
         }

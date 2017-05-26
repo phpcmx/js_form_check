@@ -139,3 +139,11 @@
     
     // post
     fVerifyType.post(url, data);
+
+哦对了，如果你还想在自己的函数里调用判断，比如在点击发送短信的时候后调用检查手机号的方法，可以这么来哦
+
+    if(formCheck.verify("手机号")){    // 这个 "手机号" 是你在配置的时候的id~
+        console.log('验证成功');
+    }else{
+        console.log('验证失败');
+    }
