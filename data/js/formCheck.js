@@ -19,14 +19,14 @@ function FormCheck(userConfig){
         verifyList : []     // 其实所有的验证都记录在这里哦
     };
     $.extend(config, userConfig);
-    config.debug && console.log('    config:', config);
+    config.debug && console.log('    合并配置为:', config);
 
     // 全局信号量
     var signal = {
-        checking : false,       // 是否正在执行 检查（为了方式重复的初始化变量，因为可能多次触发提交表单事件）
-        checkStop : false,      // 全局检查是否停止
-        result : null,           // 表单验证结果
-        postCnt : 0,            // 记录当前跑的post验证
+        submitting  : false,       // 是否正在执行 检查（为了方式重复的初始化变量，因为可能多次触发提交表单事件）
+        checkStop : false,       // 全局检查是否停止
+        result    : null,        // 表单验证结果
+        postCnt   : 0,           // 记录当前跑的post验证
         /**
          * 添加post请求
          * @return {number}
@@ -43,8 +43,10 @@ function FormCheck(userConfig){
             this.postCnt--;
             _checkFormSuccess();
             // 如果是提交开启的检查，就会重新激活提交事件
-            if(signal.checking)
-                $(config.selector).submit();
+            if(signal.submitting && signal.result !==null && !this.isHasPost()) {
+                config.debug && console.log("【再次提交】");
+                _checkFormEnd();
+            }
             return this.postCnt;
         },
         /**
@@ -55,7 +57,7 @@ function FormCheck(userConfig){
             return this.postCnt > 0;
         },
         log: function(){
-            console.log('    signal:', 'checking:',this.checking, ';checkStop:', this.checkStop, ';result', this.result, ';postCnt', this.postCnt);
+            console.log('    signal:', 'checking:',this.submitting, ';checkStop:', this.checkStop, ';result', this.result, ';postCnt', this.postCnt);
         }
     };
     config.debug && signal.log();
@@ -111,11 +113,10 @@ function FormCheck(userConfig){
         e.preventDefault();
         // 要提交的表单数据
         var post = $(config.selector).serializeArray();
-        config.debug && console.log('serializeArray:',post);
+        config.debug && console.log('    表单数据:',post);
 
         // 如果是第一次执行，则会执行初始化
-        console.log(signal.checking);
-        if(!signal.checking){
+        if(!signal.submitting){
             init();
 
             // 先进行初始化 要传递表单数组 [{name:"控件name",value:"控件值"},{},{},{}]
@@ -123,68 +124,70 @@ function FormCheck(userConfig){
         }
 
 
-        // 如果没有 验证成功 ，就执行验证的这一套  false null
-        if(!signal.result){
-            // 进行验证
-            checking(e);
-        }
+        // 进行验证
+        checking(e);
 
-        // 判断什么时候不能提交
-        // if(signal.result !== true || signal.isHasPost()){
-        //     config.debug && console.log("阻止提交：");
-        //     config.debug && signal.log();
-        //     e.preventDefault();
-        // }
 
-        config.debug && console.log('###formResult:');
+        config.debug && console.log('###检查后结果（不包含post）:');
+        config.debug && console.log("    config:", config);
         config.debug && signal.log();
+
         // 判断是否结束了验证
         // 验证结果不为null 并且没有post在执行
-        if(signal.result !== null && !signal.isHasPost()){
-            // 判断提交方式
-
-            if(signal.result ===true){
-                if(config.isAjax) {
-                    // 阻止表单提交
-                    e.preventDefault();
-
-                    console.log(config);
-                    // 这里获取ajax内容
-                    $.ajax({
-                        url: config.action,
-                        data: $.param(post),
-                        type: config.method,
-                        success: function (res) {
-                            // ajax 方式提交的内容会通过endCheck进行验证
-                            config.endCheck(res);
-                        },
-                        error: function () {
-                        }
-                    });
-                }else{
-                    $(this).off('submit').submit();
-                    config.endCheck(null);
-                }
-            }else{
-                // 最后收尾钩子
-                config.endCheck(null);
-            }
-
-            // 设置检查结束
-            signal.checking = false;
+        var isHasPost;
+        if (signal.result !== null && !(isHasPost = signal.isHasPost())) {
+            _checkFormEnd();
+        }else{
+            config.debug && console.log('有post请求，未提交成功', isHasPost);
+            config.debug && signal.log();
         }
-        config.debug && console.log('###formResult:');
-        config.debug && signal.log();
     });
 
+
+    /**
+     * 表单提交
+     * @private
+     */
+    function _checkFormEnd(){
+        config.debug && console.log("表单提交结束");
+
+        // 判断提交方式
+        if(signal.result ===true){
+            if(config.isAjax) {
+                // 这里获取ajax内容
+                $.ajax({
+                    url: config.action,
+                    data: $.param(post),
+                    type: config.method,
+                    success: function (res) {
+                        // ajax 方式提交的内容会通过endCheck进行验证
+                        config.endCheck(res);
+                    },
+                    error: function () {
+                    }
+                });
+            }else{
+                $(config.selector).off('submit').submit();
+                config.endCheck(null);
+            }
+        }else{
+            // 最后收尾钩子
+            config.endCheck(null);
+        }
+
+        // 设置检查结束
+        signal.submitting = false;
+
+        config.debug && console.log('###表单结束结果:');
+        config.debug && console.log("    config:", config);
+        config.debug && signal.log();
+    }
 
     /**
      * 初始化参数
      */
     function init(){
-        config.debug && console.log('↓↓↓↓↓↓↓↓↓↓FUN::init::START');
-        // 设置表单验证状态为true
-        signal.checking = true;
+        config.debug && console.log('【FUN】::init::START');
 
         var formObj = $(config.selector);
         // 如果isAjax为true 就需要初始化这些参数
@@ -192,9 +195,12 @@ function FormCheck(userConfig){
             config.action = config.action===null ? formObj.attr('action') : config.action;
             config.method = config.method===null ? formObj.attr('method') : config.method;
         }
+
+        // 设置表单验证状态为true
+        signal.submitting = true;
         // 设置表单的停止检查为false
         signal.checkStop = false;
-        // 设置默认表单
+        // 设置默认表单结果
         signal.result = null;
 
         for(var n in config.verifyList){
@@ -204,15 +210,16 @@ function FormCheck(userConfig){
             config.verifyList[n].result = null;
         }
 
+        config.debug && console.log("    config:", config);
         config.debug && signal.log();
-        config.debug && console.log('----------FUN::init::END.\n');
+        config.debug && console.log('【FUN】::init::END.\n');
     }
 
     /**
      * 检查函数 最关键的哦
      */
     function checking (e){
-        config.debug && console.log('↓↓↓↓↓↓↓↓↓↓FUN::checking::START');
+        config.debug && console.log('【FUN】::checking::START');
         // 遍历控件
         for (var n in config.verifyList){
             // 每个控件检查前都判断是否继续进行表单验证
@@ -223,16 +230,14 @@ function FormCheck(userConfig){
 
             // 如果有结果不正确，就重新验证一次
             if(option.result !== true) {
-                config.debug && console.log('verify:START', option.id, option);
                 verify(option);
-                config.debug && console.log('verify:END', option.id, option, "\n");
             }
         }
 
         // 验证整个表单是否都验证成功
         _checkFormSuccess();
 
-        config.debug && console.log('----------FUN::checking::END\n');
+        config.debug && console.log('【FUN】::checking::END\n');
     }
 
 
@@ -240,17 +245,35 @@ function FormCheck(userConfig){
      * 单个控件验证器
      */
     function verify(option){
-        // 重新打开停止遍历
+        config.debug && console.log('verify:START', option.id, option.result, option);
+
+        // 重新打开停止遍历(为了单次验证的时候能进行验证，不被拦截）
         option.checkStop = false;
+
+
+        // 跳过提交验证
+        if(signal.submitting && option.skipSubmit){
+            setOptionSuccess(option);
+            return ;
+        }
 
         // 遍历验证方法
         for (var m in option.verify){
-            config.debug && console.log("   "+option.id, '::'+option.verify[m].type.type ,"result:"+option.verify[m].result);
-
             // 每次运行检查前都判断是否需要继续
             if(option.checkStop)break;
+
+            config.debug && console.log("   "+option.id, '::'+option.verify[m].type.type ,"result:"+option.verify[m].result);
+
+            // 检查提交时验证方式是否要跳过
+            if(signal.submitting && option.verify[m].skipSubmit){
+                config.debug && console.log("    提交跳过验证");
+                setVerifySuccess(option, m);
+                continue;
+            }
+
             // 设置验证结果为空
             option.verify[m].result = null;
+
             // 判断验证类型，去验证
             switch(option.verify[m].type.type){
                 case 'require':
@@ -277,6 +300,26 @@ function FormCheck(userConfig){
 
         // 这里验证是否所有的验证都成功了
         _checkOptionSuccess(option);
+
+        config.debug && console.log('verify:END', option.id, option.result, option, "\n");
+    }
+
+
+    /**
+     * 把控件设置为成功状态
+     * @param option
+     */
+    function setOptionSuccess(option){
+        option.result = true;
+    }
+
+    /**
+     * 设置控件的某个验证为真
+     * @param option
+     * @param index
+     */
+    function setVerifySuccess(option, index){
+        option.verify[index].result = true;
     }
 
 
@@ -286,7 +329,7 @@ function FormCheck(userConfig){
         var value = obj.val();
 
         if(value.match(/^\s*$/i)){
-            var msg = option.id+"为必填";
+            var msg = "请填写："+option.id;
             _failCheck(option, index, errCode.require, msg);
             return ;
         }
@@ -302,6 +345,9 @@ function FormCheck(userConfig){
         if(value === ''){
             // 如果为空 阻止继续遍历，执行下个去
             option.checkStop = true;
+            // 设置控件验证成功
+            setOptionSuccess(option);
+            // 成功回调
             _successCheck(option, index, null);
         }
     }
@@ -362,8 +408,6 @@ function FormCheck(userConfig){
         _successCheck(option, index, null);
     }
     function _verifyPost(option, index, url, data){
-        // var obj = $(option.selector);
-        // var value = obj.val();
         // 设置正在post 互斥量
         if(typeof option.verify[index].posting === 'undefined' || option.verify[index].posting === false){
             option.verify[index].posting = true;
@@ -404,6 +448,11 @@ function FormCheck(userConfig){
      * 验证是否控件所有的验证都已经成功了
      */
     function _checkOptionSuccess(option){
+        // 如果已经有设置了，就不在重新验证了
+        if(option.result !== null){
+            return ;
+        }
+
         var flag = true;
         for(var n in option.verify){
             if(option.verify[n].type.type==='noRequire' && option.verify[n].result===true){
@@ -422,6 +471,11 @@ function FormCheck(userConfig){
      * 验证是否表单所有的控件都已经成功了
      */
     function _checkFormSuccess(){
+        // 如果表单已经有结果了，也不在重新验证了
+        if(signal.result !== null){
+            return ;
+        }
+
         var flag = true;
         for(var n in config.verifyList){
             if(config.verifyList[n].result !== true){
@@ -436,6 +490,12 @@ function FormCheck(userConfig){
 
     /**
      * 设置失败
+     * @param option
+     * @param index
+     * @param code
+     * @param msg
+     * @param onlySet bool 只设置，不调用回调
+     * @private
      */
     function _failCheck(option, index, code, msg, onlySet) {
         config.debug && console.log('        FAIL:', option.id, arguments);
@@ -466,7 +526,8 @@ function FormCheck(userConfig){
     function _successCheck(option, index, res){
         config.debug && console.log('        SUCCESS:', option.id, arguments);
         // 设置结果 不能验证控件成功或者表单成功
-        option.verify[index].result = true;     // 当前验证成功
+        // 当前验证成功
+        setVerifySuccess(option, index);
 
         var re;
         // 跑成功回调，如果没有就执行通用的成功
@@ -512,6 +573,7 @@ function FormCheck(userConfig){
 //                id : null;                        // 这个必须
 //                selector : null;                  // 这个也必须
             blur : true,                        // 是否在失去焦点时验证
+            skipSubmit : false,                 // 跳过提交验证
             verify : [],                       // 要验证的类型
             success : function (d, res){},    // 其实也有个统一正确处理
             error : function (d, code, msg){},   // 统一错误处理
@@ -528,6 +590,10 @@ function FormCheck(userConfig){
         // 给每个验证方法下添加result字段
         for(var n in option.verify){
             option.verify[n].result = null;
+            // 添加验证方法跳过属性
+            if(typeof option.verify[n].skipSubmit === 'undefined'){
+                option.verify[n].skipSubmit = false;
+            }
         }
 
         return option;
