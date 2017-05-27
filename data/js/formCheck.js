@@ -350,9 +350,10 @@ function FormCheck(userConfig){
             option.checkStop = true;
             // 设置控件验证成功
             setOptionSuccess(option);
-            // 成功回调
-            _successCheck(option, index, null);
         }
+
+        // 成功回调
+        _successCheck(option, index, null);
     }
     function _verifyCompareWith(option, index, compareValue){
         var obj = $(option.selector);
