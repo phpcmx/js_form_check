@@ -335,12 +335,12 @@ function FormCheck(userConfig){
 
         var msg ;
         if(value.length < min){
-            msg = option.id + "不能小于" + min;
+            msg = option.id + "长度不能小于" + min + "位";
             _failCheck(option, index, errCode.lenLimitMin, msg);
             return ;
         }
         if(value.length > max){
-            msg = option.id + "不能大于" + max;
+            msg = option.id + "长度不能大于" + max + "位";
             _failCheck(option, index, errCode.lenLimitMax, msg);
             return ;
         }
