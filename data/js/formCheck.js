@@ -1,5 +1,8 @@
 /**
- * Created by cmx on 2017/5/16.
+ * Created by 不二进制.Number on 2017/5/16.
+ *
+ * github : https://github.com/phpcmx/js_form_check
+ * packagist : phpcmx/js_form_check
  */
 
 
