@@ -6,20 +6,40 @@
  */
 
 
-// formCheck对象
+/**
+ * FormCheck 一个表单验证程序
+ * @param userConfig json 用户自定义配置
+ * {
+ *     debug     : false,       //  可选 bool    默认false    测试模式        会在console中输出运行过程
+ *     selector  : '#myform',   //  必选 string  无默认       表单选择器       作为绑定表单提交事件的唯一标识
+ *     isAjax    : true,        //  可选 bool    默认true     开启ajax提交    开启时使用ajax进行表单提交验证，关闭时使用原生的表单提交
+ *     action    : null,        //  可选 string              要提交的地址     仅在 isAjax:true 时有效，如果为null则从 selector 对应的表单action属性中获取值
+ *     method    : null,        //  可选 string              要提交的方式     仅在 isAjax:true 时有效，如果为null则从 selector 对应的表单method属性中获取值
+ *     startCheck: function(){},//  可选 callable 空匿名函数   开始检查事件钩子  在每次开始检查前，初始化检查后进行调用的钩子函数 参数 post 对应的是post的数据
+ *     endCheck  : function(){},//  可选 callable 空匿名函数   结束检查事件钩子  在ajax提交回调后，原生提交失败后进行执行的毁掉函数 参数 res 对应的时ajax提交回调结果 原生提交res为null
+ *     verifyList: []           //  可选 array    []         用来缓存验证规则的 注意：请务必不要填写此方法，请通过调用 addVerify 方法添加验证规则
+ * }
+ * @returns {{
+ *       getVerifyType: getVerifyType,
+  *      addVerify: addVerify,
+  *      verify: verify
+  *  }}
+ * @constructor
+ */
 function FormCheck(userConfig){
     // 合并配置项
-    var config = {
-        debug : false,           // debug测试模式
-        selector : '#myForm',    // form表单的选择器
-        isAjax : true,  // 表单提交方式 如果是true 就要自己组织ajax提交 如果是false 就只是判断能不能提交
-        action : null,    // 要提交的地址 选填 且仅 isAjax:true 时有效，如果不填写应该从form表单的action属性中获取
-        method : null,    // 要提交的方式 选填 且仅 isAjax:true 时有效，如果不填写应该从form表单的method属性中获取
-        // 验证前初始化的钩子
-        startCheck : function(post){},
-        // 验证完成的钩子
-        endCheck : function (result){},
-        verifyList : []     // 其实所有的验证都记录在这里哦
+    var config;
+    config = {
+        debug: false,           // debug测试模式
+        selector: '#myForm',    // form表单的选择器
+        isAjax: true,  // 表单提交方式 如果是true 就要自己组织ajax提交 如果是false 就只是判断能不能提交
+        action: null,    // 要提交的地址 选填 且仅 isAjax:true 时有效，如果不填写应该从form表单的action属性中获取
+        method: null,    // 要提交的方式 选填 且仅 isAjax:true 时有效，如果不填写应该从form表单的method属性中获取
+        startCheck: function (post) {
+        },
+        endCheck: function (result) {
+        },
+        verifyList: []     // 其实所有的验证都记录在这里哦
     };
     $.extend(config, userConfig);
     config.debug && console.log('    合并配置为:', config);
@@ -27,9 +47,9 @@ function FormCheck(userConfig){
     // 全局信号量
     var signal = {
         submitting  : false,       // 是否正在执行 检查（为了方式重复的初始化变量，因为可能多次触发提交表单事件）
-        checkStop : false,       // 全局检查是否停止
-        result    : null,        // 表单验证结果
-        postCnt   : 0,           // 记录当前跑的post验证
+        checkStop   : false,       // 全局检查是否停止
+        result      : null,        // 表单验证结果
+        postCnt     : 0,           // 记录当前跑的post验证
         /**
          * 添加post请求
          * @return {number}
@@ -118,13 +138,16 @@ function FormCheck(userConfig){
         var post = $(config.selector).serializeArray();
         config.debug && console.log('    表单数据:',post);
 
-        // 如果是第一次执行，则会执行初始化
-        if(!signal.submitting){
-            init();
-
-            // 先进行初始化 要传递表单数组 [{name:"控件name",value:"控件值"},{},{},{}]
-            config.startCheck(post);
+        // 如果正在提交，不能再次提交，做互斥
+        if(signal.submitting){
+            return;
         }
+
+        // 如果是第一次执行，则会执行初始化
+        init();
+
+        // 先进行初始化 要传递表单数组 [{name:"控件name",value:"控件值"},{},{},{}]
+        config.startCheck(post);
 
 
         // 进行验证
@@ -332,7 +355,7 @@ function FormCheck(userConfig){
         var value = obj.val();
 
         if(value.match(/^\s*$/i)){
-            var msg = "请填写："+option.id;
+            var msg = "请填写"+option.id;
             _failCheck(option, index, errCode.require, msg);
             return ;
         }
