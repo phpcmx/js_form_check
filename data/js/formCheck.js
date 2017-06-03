@@ -44,6 +44,11 @@ function FormCheck(userConfig){
     $.extend(config, userConfig);
     config.debug && console.log('    合并配置为:', config);
 
+    // 全局数据存储
+    var data = {
+        post : null
+    };
+
     // 全局信号量
     var signal = {
         submitting  : false,       // 是否正在执行 检查（为了方式重复的初始化变量，因为可能多次触发提交表单事件）
@@ -68,7 +73,7 @@ function FormCheck(userConfig){
             // 如果是提交开启的检查，就会重新激活提交事件
             if(signal.submitting && signal.result !==null && !this.isHasPost()) {
                 config.debug && console.log("【再次提交】");
-                _checkFormEnd();
+                _checkFormEnd(data.post);
             }
             return this.postCnt;
         },
@@ -135,7 +140,7 @@ function FormCheck(userConfig){
         // 总是阻止
         e.preventDefault();
         // 要提交的表单数据
-        var post = $(config.selector).serializeArray();
+        data.post = $(config.selector).serializeArray();
         config.debug && console.log('    表单数据:',post);
 
         // 如果正在提交，不能再次提交，做互斥
@@ -147,7 +152,7 @@ function FormCheck(userConfig){
         init();
 
         // 先进行初始化 要传递表单数组 [{name:"控件name",value:"控件值"},{},{},{}]
-        config.startCheck(post);
+        config.startCheck(data.post);
 
 
         // 进行验证
@@ -162,7 +167,7 @@ function FormCheck(userConfig){
         // 验证结果不为null 并且没有post在执行
         var isHasPost;
         if (signal.result !== null && !(isHasPost = signal.isHasPost())) {
-            _checkFormEnd();
+            _checkFormEnd(data.post);
         }else{
             config.debug && console.log('有post请求，未提交成功', isHasPost);
             config.debug && signal.log();
@@ -174,7 +179,7 @@ function FormCheck(userConfig){
      * 表单提交
      * @private
      */
-    function _checkFormEnd(){
+    function _checkFormEnd(post){
         config.debug && console.log("表单提交结束");
 
         // 判断提交方式
@@ -280,6 +285,7 @@ function FormCheck(userConfig){
         // 跳过提交验证
         if(signal.submitting && option.skipSubmit){
             setOptionSuccess(option);
+            config.debug && console.log('verify:END 跳过提交验证', option.id, option.result, option, "\n");
             return ;
         }
 
@@ -482,9 +488,11 @@ function FormCheck(userConfig){
 
         var flag = true;
         for(var n in option.verify){
-            if(option.verify[n].type.type==='noRequire' && option.verify[n].result===true){
+          /*  if(option.verify[n].type.type==='noRequire' && option.verify[n].result===true){
                 break;
-            }else if(option.verify[n].result !== true){
+            }else */
+
+            if(option.verify[n].result !== true){
                 flag = option.verify[n].result;
                 break;
             }
