@@ -141,7 +141,7 @@ function FormCheck(userConfig){
         e.preventDefault();
         // 要提交的表单数据
         data.post = $(config.selector).serializeArray();
-        config.debug && console.log('    表单数据:',post);
+        config.debug && console.log('    表单数据:',data.post);
 
         // 如果正在提交，不能再次提交，做互斥
         if(signal.submitting){
